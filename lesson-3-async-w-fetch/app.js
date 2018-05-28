@@ -8,5 +8,62 @@
         e.preventDefault();
         responseContainer.innerHTML = '';
         searchedForText = searchField.value;
+
+    fetch(`https://api.unsplash.com/search/photos?page=1&query=${searchedForText}`, {
+    headers: {
+        Authorization: 'Client-ID d27788dc48e5657d3d0b44fdeebc8704ee37cea42f6c2e29c7b5cc9675386a1b'
+    	}
+	})
+	.then(response => response.json())
+	.then(addImage)
+	.catch(e => requestError(e, 'image'));
+
+	fetch(`https://api.nytimes.com/svc/search/v2/articlesearch.json?q=${searchedForText}&api-key=5a45e5af2fee47e4849852e377600a1d`)
+	.then(response => response.json())
+	.then(addArticles)
+	.catch(e => requestError(e, 'articles'));
+
+
+
+
+	//get the first image that's returned from unsplash
+	function addImage(data) {
+    let htmlContent = '';
+    const firstImage = data.results[0];
+    //create a figure tag with the small image
+    //create a figcaption that displays the text that was searched for along with the
+    //first name of the person that took the image
+    if (firstImage) {
+        htmlContent = `<figure>
+            <img src="${firstImage.urls.small}" alt="${searchedForText}">
+            <figcaption>${searchedForText} by ${firstImage.user.name}</figcaption>
+        </figure>`;
+    } else {
+        htmlContent = 'Unfortunately, no image was returned for your search.'
+    }
+
+    responseContainer.insertAdjacentHTML('afterbegin', htmlContent);
+	}
+	//loop over all the articles and add them to an unordered list
+	 function addArticles (data) {
+        let htmlContent = '';
+        if (data.response && data.response.docs && data.response.docs.length > 1){
+            htmlContent = '<ul>' + data.response.docs.map(article => `<li>
+                    <h2><a href="${article.web_url}">${article.headline.main}</a><h2>
+                    <p>${article.snippet}</p>
+                </li>`
+            ).join('')+ '</ul>';
+        } else {
+            htmlContent = '<div class= "error-no-articles">No articles available</div>';
+        }
+        responseContainer.insertAdjacentHTML('beforeend', htmlContent);
+    }
+
+
+	function requestError(e, part) {
+    console.log(e);
+    	responseContainer.insertAdjacentHTML('beforeend', `<p class="network-warning">Oh no! There was an error making a request for the ${part}.</p>`);
+		}
     });
+
 })();
